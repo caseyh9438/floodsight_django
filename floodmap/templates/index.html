@@ -1,0 +1,238 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta charset="utf-8">
+     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.4/dist/leaflet.css"
+       integrity="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA=="
+       crossorigin=""/>
+    <title>Savannah Floods</title>
+    <link rel="stylesheet" href="{% static 'assets/bootstrap/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/fonts/font-awesome.min.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/css/Features-Boxed.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.5.2/animate.min.css">
+    <link rel="stylesheet" href="{% static 'assets/css/Navigation-with-Search.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/css/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/css/elements.css' %}">
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+
+
+
+    <style>
+      /* Always set the map height explicitly to define the size of the div
+       * element that contains the map. */
+      #test {
+          height: 90%;
+      }
+      #mapid {
+        height: 100%;
+
+      }
+      /* Optional: Makes the sample page fill the window. */
+      html, body {
+        height: 100%;
+        margin-top: 0;
+        padding: 0;
+      }
+    </style>
+
+  </head>
+  <body>
+    <div class="justify-content-between" style="background-color:#ffffff;vertical-align:middle;">
+        <nav class="navbar navbar-light navbar-expand-md navigation-clean-search" style="background-color:lightgray;color:#ffffff;">
+            <div class="container">
+                <a role="button" href="#" border="0px" class="navbar-brand" style="background-color:rgba(255,255,255,0);color:#ffffff" data-bs-hover-animate="pulse"><img src="{% static 'images/floodsight-coastalga.png' %}" style="width:170px;height:75px;"></a>
+                <button id="popup" class="addeventbutton" onclick="div_show()" data-bs-hover-animate="pulse" style="background-color:rgb(254,254,254);color:rgb(20,133,238);">Report Flood</button></div>
+            </div>
+        </nav>
+    </div>
+    <div id='test'>
+        <div id="mapid">
+            <!-- Body Starts Here -->
+            <div id="body" style="overflow:hidden;">
+            <div id="abc">
+            <!-- Popup Div Starts Here -->
+            <div id="popupContact">
+            <!-- Contact Us Form -->
+            <form action='' id="form" method="POST" name="form">
+                {% csrf_token %}
+            <div>
+            <div id='close'><button onClick="div_hide()" id='closebutton'>X</button></div>
+            <h2 style="color:#fff;">Report Flood</h2>
+            </div>
+            <hr>
+            {% for field in form %}
+                {{ field }}
+            {% endfor %}
+            {% comment %}
+            <input id="id_name" name="Your Namae" placeholder="Your Name" type="text">
+            <input id="email" name="Event Name" placeholder="Event Name" type="text">
+            <input id="email" name="Event Location" placeholder="Address of Flood" type="text">
+            <input id="datepicker" name="Date_time" placeholder="Starting Date of Event" type="text">
+            <input id="registration" name="Registration Link" placeholder='Link to Registration' type="text">
+            <textarea id="msg" name="Event Description" placeholder="Flood Description" type='text'></textarea>
+            {% endcomment %}
+            <a role="button" id="submit" value="Post">Submit Report</a>
+            </form>
+            </div>
+            <!-- Popup Div Ends Here -->
+            </div>
+            </body>
+            <!-- Body Ends Here -->
+            </div>
+        </div>
+    </div>
+    <script src="https://unpkg.com/leaflet@1.3.4/dist/leaflet.js"
+   integrity="sha512-nMMmRyTVoLYqjP9hrbed9S+FzjZHW5gY1TWCHA5ckwXZBadntCNs8kEqAWdrb9O7rxbCaA4lKTIWjDXZxflOcA=="
+   crossorigin=""></script>
+   <script src="https://unpkg.com/leaflet.markercluster@1.3.0/dist/leaflet.markercluster.js"></script>
+   <script src="{% static 'assets/js/leafletlogocontrol.js' %}"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyARYasdixKqtbzKE6j8ZsLCOxmOJEI5EQY"
+    async defer></script>
+    <script>
+
+    var mymap = new L.Map('mapid', {zoom: 25, center: new L.latLng([32.0809, -81.0912]) });	//set center from first location
+
+    L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
+        attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>',
+        maxZoom: 18,
+        minZoom: 4,
+        id: 'mapbox.streets',
+        accessToken: 'pk.eyJ1IjoiY2FzZXloOTQzOCIsImEiOiJjamxmOTc3MDgwdTNnM3dwY2llc256dzNoIn0.F2nDO1DCRSRq__K4BirLEg'
+    }).addTo(mymap);
+
+    var bookIcon = L.icon({
+        iconUrl: "{% static 'assets/img/blue_marker.png' %}",
+        iconSize:     [60, 30], // size of the icon
+        iconAnchor:   [17, 35], // point of the icon which will correspond to marker's location
+        popupAnchor:  [0, -30] // point from which the popup should open relative to the iconAnchor
+        });
+
+    var markersLayer = L.markerClusterGroup();
+
+    mymap.addLayer(markersLayer);
+
+    function populateMap(data){
+        for(i in data) {
+        var title = data[i].title,	//value searched
+                loc = data[i].loc, //position found
+                name_of_event = data[i].name_of_event,
+                date = data[i].date,
+                location_ = data[i].location_
+                descriptions = data[i].descriptions,
+                url = data[i].url,
+            marker = new L.Marker(new L.latLng(loc), {title: title} );//se property searched
+        marker.bindPopup('<p style=margin:0px;><a href="'+ url + '">' + title + '</a><br>' + '</p>' + '<p style=font-style:italic;margin:0px;>' + '</p><div><p style=margin:0px;font-weight:bold;>Location: </p>' + '<p style=margin:0px;>' + location_ + '</p></div>' + '<p style=margin:0px;>' + '</p>' + '<p style=margin:0px;font-weight:bold;>Description: </p>' + '<p style=margin:0px;>' + descriptions + '</p>' + '</p>');
+        markersLayer.addLayer(marker);
+        }
+    }
+
+    // use context variable instead of making AJAX call
+    var map_events =  JSON.parse('{{ map_events }}')
+    var new_lat = map_events[0].loc[0]
+    var new_lon = map_events[0].loc[1]
+    mymap.setView([32.0809, -81.0912], 13);
+    populateMap(map_events)
+
+</script>
+
+<script type="text/javascript">
+   function check_location() {
+   var geocoder = new google.maps.Geocoder();
+   var address = document.getElementById('id_Location').value;
+
+   if (document.getElementById('id_Location').value != "") {
+      geocoder.geocode({ 'address': address }, function (results, status) {
+         if (status == google.maps.GeocoderStatus.OK) {
+             document.getElementById('form').submit();
+             alert("The form looks good, but please check the map! If you don't see your event then you didn't enter a valid location.");
+         }
+         else {
+            alert("Please enter a valid address, city and state.");
+         }
+      });
+   }
+}
+</script>
+<script>
+
+// var geocoder = new google.maps.Geocoder();
+
+// function check_empty() {
+//     geocodeAddress(geocoder);
+//     check_empty_now();
+// }
+
+// function geocodeAddress() {
+//     var address = document.getElementById('id_City').value;
+//     geocoder.geocode({'address': address}, function(results, status) {
+//         if (status != 'OK') {
+//             alert("Please enter valid location");
+//             }
+//         });
+// }
+
+// var location = document.getElementById('id_City')
+// var status_url = "https://maps.googleapis.com/maps/api/geocode/json?address=" + location + "&key=AIzaSyARYasdixKqtbzKE6j8ZsLCOxmOJEI5EQY"
+// $.getJSON( url, {
+
+// })
+// .done(function( data ) {
+//     $.each( data.items, function(i, item) {
+//         $("")
+//     })
+// })
+
+function check_authorization() {
+    if (document.getElementById('id_Authorization_token').value == 'hd#gem#auth'){
+        check_empty();
+    }
+    else {
+        alert('Map submissions must be made by authorized users. To recieve an Authorization Code so that you can post events just simply email Casey Herrington at casey@hdgem.org to be approved!')
+    }
+}
+
+
+function check_empty() {
+if (document.getElementById('id_Name_of_Organization').value == "" || document.getElementById('id_Name_of_Event').value == "" || document.getElementById('id_Location').value == "" || document.getElementById('id_Date_time').value == "" || document.getElementById('id_Registration_Link').value == "" || document.getElementById('id_Description').value == "") {
+alert("Fill all the fields!");
+}
+
+else {
+check_location();
+// alert("Form Submitted Successfully! Currently Under Review. Please allow up to 72hrs for the review process'");
+}
+}
+
+//Function To Display Popup
+function div_show() {
+document.getElementById('abc').style.display = "block";
+document.getElementById('test').style.cssText = 'height:0%';
+}
+
+//Function to Hide Popup
+function div_hide(){
+document.getElementById('abc').style.display = "none";
+document.getElementById('test').style.cssText = 'height:100%';
+}
+</script>
+
+    <script src="{% static 'assets/js/jquery.min.js' %}"></script>
+    <script src="{% static 'assets/bootstrap/js/bootstrap.min.js' %}"></script>
+    <script src="{% static 'assets/js/bs-animation.js' %}"></script>
+    <script src="{% static 'assets/js/my_js.js' %}"></script>
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <!--<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/0.4.2/leaflet.draw.css"/>-->
+    <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/0.4.2/leaflet.draw.js"></script>-->
+
+ <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+  <script>
+  $( function() {
+    $( "#id_Date_time" ).datepicker({ dateFormat: 'yy-mm-dd' }).val();
+
+  } );
+  </script>
+ </body>
+</html>

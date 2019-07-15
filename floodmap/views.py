@@ -15,7 +15,7 @@ from pymongo import MongoClient
 def map(request):
     def initialize_db(collection_name):
         client = MongoClient(
-            'mongodb+srv://caseyh9438:opensavannah@mapdata-j3m49.mongodb.net/test?retryWrites=true&w=majority')
+            #insert url herer# ')
         collection = client.get_database(collection_name)
         db = collection.savannah_floods
         return db

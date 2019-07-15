@@ -10,8 +10,19 @@ from django.utils.html import escapejs
 from django.utils.safestring import mark_safe
 from django.http import HttpResponseRedirect
 
+from pymongo import MongoClient
+
 def map(request):
-    events = AddMarker.objects.all()
+    def initialize_db(collection_name):
+        client = MongoClient(
+            'mongodb+srv://caseyh9438:opensavannah@mapdata-j3m49.mongodb.net/test?retryWrites=true&w=majority')
+        collection = client.get_database(collection_name)
+        db = collection.savannah_floods
+        return db
+
+    db = initialize_db('flood_db')
+    events = list(db.find())
+
     ##request.GET used to filter events
     #form = QueryForm(request.GET or None)
     #paramDict = request.GET
@@ -47,10 +58,11 @@ def map(request):
 
 
     ##
-    map_events = [{'loc':[float(AddEvent.lat), float(AddEvent.lon)],
-                   'title':AddEvent.users_name,
-                   'location_':AddEvent.location,
-                   'descriptions':AddEvent.description} for AddEvent in events]
+    map_events = [{'loc':[float(AddEvent['lat']), float(AddEvent['lon'])],
+                   'title':'User reported flood'} for AddEvent in events]
+                   #'location_':AddEvent.location,
+                   # 'descriptions':AddEvent.description} for AddEvent in events]
+
 
     ##This convertes 'date' into a JSON serializable string##
     def myconverter(o):
